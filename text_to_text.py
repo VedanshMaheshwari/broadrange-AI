@@ -6,7 +6,7 @@
 import openai
 
 # Set your OpenAI API key
-openai.api_key = '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'
+openai.api_key = 'your api key'
 
 # Define your input text that you want to rephrase
 input_text = "A blog (short for “weblog”) is an online journal or informational website run by an individual, group, or corporation that offers regularly updated content (blog post) about a topic. It presents information in reverse chronological order and it's written in an informal or conversational style."
