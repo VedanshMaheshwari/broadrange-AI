@@ -1,0 +1,140 @@
+url="https://www.amazon.in/"
+url
+
+def fetch_web_content_with_coordinates(url):
+    chrome_driver_path = 'C:/Users/sriha/REQD PROGS/chromedriver-win64/chromedriver-win64/chromedriver.exe'
+    service = Service(chrome_driver_path)
+    driver = webdriver.Chrome(service=service)
+    driver.get(url)
+
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    img_tags = soup.find_all('img')
+    data = []
+    
+    for index, img_tag in enumerate(img_tags):
+        x, y = get_coordinates_using_js_or_style(driver, img_tag)
+
+        parent_div = img_tag.find_parent('div')
+        sku = parent_div.find('span', class_='sku')
+        
+        img_url = img_tag["src"]
+        
+        description = extract_description(img_url)
+
+        data.append({
+            "img_url": img_url,
+            "x": x,
+            "y": y,
+            "sku": sku.get_text() if sku else None,
+            "description": description
+        })
+
+    driver.quit()
+    return data
+    
+#-----------------------------------------------------------------------------------------
+
+#add function called extract description
+
+#-----------------------------------------------------------------------------------------
+    
+def get_coordinates_using_js_or_style(driver, img_tag):
+    """
+    Get image coordinates using JavaScript or from the style attribute.
+    """
+    style = img_tag.get('style', '')
+
+    if 'left' in style and 'top' in style:
+        # Extract coordinates from the style attribute
+        x, y = map(int, [value.replace('px', '').strip() for value in style.split(';') if 'left' in value or 'top' in value])
+    else:
+        # If style doesn't contain valid position information, use JavaScript
+        x, y = get_coordinates_using_js(driver, img_tag)
+
+    return x, y
+
+#-------------------------------------------------------------------------------------------------------
+def get_coordinates_using_js(driver, img_tag):
+    img_src = img_tag.get('src')
+
+    # Custom wait loop to handle delays in loading
+    max_wait_time = 20  # Maximum wait time in seconds
+    interval = 1  # Check interval in seconds
+    max_attempts = 5  # Maximum number of attempts
+    attempts = 0  # Counter for attempts
+
+    while attempts < max_attempts:
+        try:
+            print(f"Attempting to find image with src '{img_src}' (Attempt {attempts + 1})...")
+            # Attempt to find the image element
+            img_element = driver.find_element(By.XPATH, f'//img[@src="{img_src}"]')
+
+            # If found, get coordinates and break the loop
+            x = driver.execute_script('return arguments[0].getBoundingClientRect().left;', img_element)
+            y = driver.execute_script('return arguments[0].getBoundingClientRect().top;', img_element)
+            print(f"Image with src '{img_src}' found. Coordinates: {x}, {y}")
+            return float(x), float(y)
+        except NoSuchElementException:
+            # If not found, sleep for the interval and update attempts
+            time.sleep(interval)
+            attempts += 1
+
+    # If the maximum number of attempts is reached, print a message and return default coordinates
+    print(f"Image with src '{img_src}' not found after {max_attempts} attempts. Using default coordinates.")
+    return 0, 0  # Default coordinates
+
+#---------------------------------------------------------------------------------------------------------------
+
+def store_data_in_excel(data, filename="output.xlsx"):
+    """
+    Store the extracted data in an Excel file.
+    """
+    df = pd.DataFrame(data)
+    try:
+        # Code that may raise an exception
+        df.to_excel("C:/Users/sriha/Jupyter Notebooks/output.xlsx", index=False)
+        print("Excel file successfully created.")
+    except Exception as e:
+        # Handle the exception
+        print(f"Error: {e}")
+#     df = pd.DataFrame(data)
+#     df.to_excel("C:/Users/sriha/Jupyter Notebooks/output.xlsx",index=False)
+
+def create_image_library_from_text(text_list):
+    """
+    Create a digital image library using DALL·E from the extracted text.
+    """
+    image_library = []
+    
+    for text in text_list:
+        if text:
+            # Generate images using DALL·E (this is a hypothetical call)
+            images = text2im(prompts=[text])
+            image_library.extend(images)
+    
+    return image_library
+
+def main(url):
+    extracted_data = fetch_web_content_with_coordinates(url)
+    
+    # Check if there is data before proceeding
+    if extracted_data:
+        # Store the data in an Excel file
+        store_data_in_excel(extracted_data)
+        
+        # Create image library from extracted text
+        extracted_texts = [item.get('description', '') for item in extracted_data]
+        image_library = create_image_library_from_text(extracted_texts)
+
+        # Save the images from the image library
+        for index, image in enumerate(image_library):
+            image.save(f"image_library_{index}.png")
+    else:
+        print("No data extracted from the web content.")
+
+if __name__ == "__main__":
+    url = input("Enter the website URL: ")
+    url_to_crawl = url
+    user_agent_name = input("enter the name of ur crawler")
+    is_allowed_to_crawl(url, user_agent=user_agent_name)
+    main(url)
