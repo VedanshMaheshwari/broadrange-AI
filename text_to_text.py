@@ -1,26 +1,50 @@
-# This code is to convert the text on the website to a better and rephrased version of the same text with the same meaning.
-!pip install openai
-!pip install --upgrade openai
-!pip install openai==0.28
-
 import openai
+import os
 
-# Set your OpenAI API key
-openai.api_key = 'your api key'
+def read_html_file(html_file_path):
+    try:
+        with open(html_file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except IOError as e:
+        print(f"Error reading HTML file: {e}")
+        return None
 
-# Define your input text that you want to rephrase
-input_text = "A blog (short for “weblog”) is an online journal or informational website run by an individual, group, or corporation that offers regularly updated content (blog post) about a topic. It presents information in reverse chronological order and it's written in an informal or conversational style."
+def write_html_file(output_file_path, content):
+    try:
+        with open(output_file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+    except IOError as e:
+        print(f"Error writing HTML file: {e}")
 
-# Make a request to the OpenAI API for text completion
-response = openai.Completion.create(
-    model="text-davinci-003",  # Specify the GPT-3 model
-    prompt=f"Rephrase the following text:\n\"{input_text}\"",
-    max_tokens=100,  # Adjust max_tokens as needed
-    temperature=0.7  # Adjust temperature as needed
-)
+# Get OpenAI API key from user input
+#openai.api_key = input("Enter your OpenAI API key: ")
+openai.api_key = ""
 
-# Extract the generated text from the response
-output_text = response['choices'][0]['text']
+# Specify the path to your HTML file
+html_file_path = input("Enter the path to the HTML file: ")
 
-# Print the rephrased text
-print(output_text)
+# Read the content of the HTML file
+input_text = read_html_file(html_file_path)
+
+if input_text is not None:
+    # Make a request to the OpenAI API for text completion
+    response = openai.Completion.create(
+        model="text-davinci-003",  # Specify the GPT-3 model
+        prompt=f"Rephrase the following text:\n\"{input_text}\"",
+        max_tokens=100,  # Adjust max_tokens as needed
+        temperature=0.7  # Adjust temperature as needed
+    )
+
+    # Extract the generated text from the response
+    output_text = response['choices'][0]['text']
+
+    # Replace the content of the HTML file with the generated text
+    updated_html_content = input_text.replace(input_text, output_text)
+
+    # Specify the path for the output HTML file
+    output_file_path = input("Enter the path for the output HTML file: ")
+
+    # Write the updated content to a new HTML file
+    write_html_file(output_file_path, updated_html_content)
+
+    print(f"HTML file updated successfully. New file: {output_file_path}")
