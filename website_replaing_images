@@ -1,0 +1,54 @@
+import os
+
+def update_html_file(html_file_path, output_file_path):
+    try:
+        with open(html_file_path, 'r') as file:
+            html_content = file.read()
+
+            # Extract the original image URLs dynamically
+            image_urls = []
+            start_index = 0
+
+            while True:
+                start_index = html_content.find('img src=', start_index)
+                if start_index == -1:
+                    break
+
+                start_index += 9
+                end_index = html_content.find('"', start_index)
+                if end_index == -1:
+                    break
+
+                original_image_url = html_content[start_index:end_index]
+                image_urls.append(original_image_url)
+
+            # Ask the user to input new URLs for each image
+            new_image_urls = []
+            for original_image_url in image_urls:
+                new_image_url = input(f"Enter the new URL for image '{original_image_url}': ")
+                new_image_urls.append((original_image_url, new_image_url))
+
+            # Replace the original image URLs with the new ones
+            updated_html_content = html_content
+            for original_image_url, new_image_url in new_image_urls:
+                updated_html_content = updated_html_content.replace(original_image_url, new_image_url)
+
+            # Extract the directory from the input HTML file path
+            output_directory = os.path.dirname(html_file_path)
+            # Create the full path for the output file
+            full_output_path = os.path.join(output_directory, output_file_path)
+
+            # Write the updated content to a new HTML file
+            with open(full_output_path, 'w') as output_file:
+                output_file.write(updated_html_content)
+
+            print(f"HTML file updated successfully. New file: {full_output_path}")
+
+    except IOError as e:
+        print(f"Error: {e}")
+
+# Example usage
+html_file_path = input("Enter the path to the HTML file: ")
+output_file_path = "updated_file.html"
+
+update_html_file(html_file_path, output_file_path)
